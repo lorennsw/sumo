@@ -8,20 +8,20 @@ const c=document.getElementById('c'),x=c.getContext('2d');let W,H;function rs(){
 const name=(prompt('Tu nombre:')||'Jugador').slice(0,12);let S=null,me=0,k={},touch=null;
 const ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
 ws.onopen=()=>ws.send(JSON.stringify({name}));
-ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.you)me=d.you;else if(d.full)alert('Sala llena (máx 6)');else S=d};
+ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.you)me=d.you;else if(d.full)alert('Sala llena (máx 6)');else{const old=S;S=d;if(old)for(const p of S.ps){const o=old.ps.find(q=>q.id==p.id);if(o&&o.alive){p.rx=o.rx;p.ry=o.ry}}}};
 onkeydown=e=>{k[e.key.toLowerCase()]=1;if(e.key.startsWith('Arrow'))e.preventDefault()};onkeyup=e=>k[e.key.toLowerCase()]=0;
 c.onpointerdown=e=>touch={sx:e.clientX,sy:e.clientY,x:0,y:0};
 c.onpointermove=e=>{if(touch){touch.x=(e.clientX-touch.sx)/50;touch.y=(e.clientY-touch.sy)/50}};
 c.onpointerup=c.onpointercancel=()=>touch=null;
-setInterval(()=>{if(ws.readyState!=1)return;let ix=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0),iy=(k.s||k.arrowdown?1:0)-(k.w||k.arrowup?1:0);
- if(touch){ix=touch.x;iy=touch.y}ws.send(JSON.stringify({in:{x:ix,y:iy}}))},33);
+let last='';setInterval(()=>{if(ws.readyState!=1)return;let ix=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0),iy=(k.s||k.arrowdown?1:0)-(k.w||k.arrowup?1:0);
+ if(touch){ix=touch.x;iy=touch.y}const m=JSON.stringify({in:{x:ix,y:iy}});if(m!=last){ws.send(m);last=m}},16);
 (function loop(){x.fillStyle='#1b1430';x.fillRect(0,0,W,H);
  if(S){const sc=Math.min(W,H)/700;x.save();x.translate(W/2,H/2);x.scale(sc,sc);
   x.beginPath();x.arc(0,0,S.R,0,7);x.fillStyle='#f6d365';x.fill();x.lineWidth=8;x.strokeStyle='#ff6b6b';x.stroke();
-  for(const p of S.ps){if(!p.alive)continue;x.beginPath();x.arc(p.x,p.y,22,0,7);x.fillStyle=p.col;x.fill();
+  for(const p of S.ps){if(!p.alive)continue;p.rx=p.rx==null?p.x:p.rx+(p.x-p.rx)*.5;p.ry=p.ry==null?p.y:p.ry+(p.y-p.ry)*.5;const X=p.rx,Y=p.ry;x.beginPath();x.arc(X,Y,22,0,7);x.fillStyle=p.col;x.fill();
    if(p.id==me){x.lineWidth=4;x.strokeStyle='#fff';x.stroke()}
-   x.fillStyle='#000';x.beginPath();x.arc(p.x-7,p.y-5,4,0,7);x.arc(p.x+7,p.y-5,4,0,7);x.fill();
-   x.fillStyle='#fff';x.font='bold 14px system-ui';x.textAlign='center';x.fillText(p.name,p.x,p.y-30)}
+   x.fillStyle='#000';x.beginPath();x.arc(X-7,Y-5,4,0,7);x.arc(X+7,Y-5,4,0,7);x.fill();
+   x.fillStyle='#fff';x.font='bold 14px system-ui';x.textAlign='center';x.fillText(p.name,X,Y-30)}
   x.restore();x.textAlign='left';x.font='bold 16px system-ui';
   S.ps.forEach((p,i)=>{x.fillStyle=p.col;x.fillText('● '+p.name+': '+p.score+(p.id==me?' (vos)':''),16,50+i*22)});
   if(S.state!='play'){x.fillStyle='#fff';x.textAlign='center';x.font='bold 30px system-ui';x.fillText(S.msg,W/2,H/2)}}
