@@ -8,13 +8,17 @@ const c=document.getElementById('c'),x=c.getContext('2d');let W,H;function rs(){
 const name=(prompt('Tu nombre:')||'Jugador').slice(0,12);let S=null,me=0,k={},touch=null;
 const ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
 ws.onopen=()=>ws.send(JSON.stringify({name}));
-ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.you)me=d.you;else if(d.full)alert('Sala llena (máx 6)');else{const old=S;S=d;{const m=S.ps.find(p=>p.id==me);if(!m||!m.alive||S.state=='wait')pr=null;else if(!pr||Math.hypot(m.x-pr.x,m.y-pr.y)>90)pr={x:m.x,y:m.y,vx:m.vx,vy:m.vy};else{pr.x+=(m.x-pr.x)*.15;pr.y+=(m.y-pr.y)*.15;pr.vx+=(m.vx-pr.vx)*.25;pr.vy+=(m.vy-pr.vy)*.25}}if(old&&navigator.vibrate){const a=old.ps.find(p=>p.id==me),b=S.ps.find(p=>p.id==me);if(a&&b&&a.alive&&!b.alive)navigator.vibrate(300);if(old.state=='play'&&S.state=='over'&&b&&b.alive)navigator.vibrate([80,60,80,60,200])}if(old)for(const p of S.ps){const o=old.ps.find(q=>q.id==p.id);if(o&&o.alive){p.rx=o.rx;p.ry=o.ry}}}};
+ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.you)me=d.you;else if(d.full)alert('Sala llena (máx 6)');else{const old=S;S=d;{const m=S.ps.find(p=>p.id==me);if(!m||!m.alive||S.state=='wait')pr=null;else if((!pr||pr.r!=S.round)&&deadR!=S.round)pr={x:m.x,y:m.y,vx:0,vy:0,r:S.round}}if(old&&navigator.vibrate){const a=old.ps.find(p=>p.id==me),b=S.ps.find(p=>p.id==me);if(a&&b&&a.alive&&!b.alive)navigator.vibrate(300);if(old.state=='play'&&S.state=='over'&&b&&b.alive)navigator.vibrate([80,60,80,60,200])}if(old)for(const p of S.ps){const o=old.ps.find(q=>q.id==p.id);if(o&&o.alive){p.rx=o.rx;p.ry=o.ry}}}};
 onkeydown=e=>{k[e.key.toLowerCase()]=1;if(e.key.startsWith('Arrow'))e.preventDefault()};onkeyup=e=>k[e.key.toLowerCase()]=0;
 c.onpointerdown=e=>{touch={sx:e.clientX,sy:e.clientY,x:0,y:0,cx:e.clientX,cy:e.clientY};const d=document.documentElement;if(e.pointerType=='touch'&&!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{})};
 c.onpointermove=e=>{if(touch){let dx=e.clientX-touch.sx,dy=e.clientY-touch.sy;const l=Math.hypot(dx,dy);if(l>60){dx*=60/l;dy*=60/l}touch.cx=touch.sx+dx;touch.cy=touch.sy+dy;touch.x=dx/50;touch.y=dy/50}};
 c.onpointerup=c.onpointercancel=()=>touch=null;
-let last='',cur={x:0,y:0},pr=null,acc=0,lt=0;setInterval(()=>{if(ws.readyState!=1)return;let ix=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0),iy=(k.s||k.arrowdown?1:0)-(k.w||k.arrowup?1:0);
- if(touch){ix=touch.x;iy=touch.y}ix=Math.max(-1,Math.min(1,ix));iy=Math.max(-1,Math.min(1,iy));cur={x:ix,y:iy};const m=JSON.stringify({in:{x:ix,y:iy}});if(m!=last){ws.send(m);last=m}},16);
+let deadR=-1,cur={x:0,y:0},pr=null,acc=0,lt=0;setInterval(()=>{if(ws.readyState!=1)return;let ix=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0),iy=(k.s||k.arrowdown?1:0)-(k.w||k.arrowup?1:0);
+ if(touch){ix=touch.x;iy=touch.y}ix=Math.max(-1,Math.min(1,ix));iy=Math.max(-1,Math.min(1,iy));cur={x:ix,y:iy};},16);
+setInterval(()=>{if(ws.readyState==1&&pr&&S)ws.send(JSON.stringify({r:pr.r,pos:[+pr.x.toFixed(1),+pr.y.toFixed(1),+pr.vx.toFixed(2),+pr.vy.toFixed(2)]}))},33);
+function step(){if(!pr||!S)return;pr.vx=(pr.vx+cur.x*.6)*.92;pr.vy=(pr.vy+cur.y*.6)*.92;pr.x+=pr.vx;pr.y+=pr.vy;
+ for(const o of S.ps){if(o.id==me||!o.alive||o.rx==null)continue;const dx=pr.x-o.rx,dy=pr.y-o.ry,dd=Math.hypot(dx,dy)||1;if(dd<44){const nx=dx/dd,ny=dy/dd,rv=(o.vx-pr.vx)*nx+(o.vy-pr.vy)*ny;const sm=Math.hypot(pr.vx,pr.vy),so=Math.hypot(o.vx,o.vy),sh=Math.max(.15,Math.min(.9,(so+.3)/(sm+so+.6)));if(rv>0){pr.vx+=rv*1.6*sh*nx;pr.vy+=rv*1.6*sh*ny}pr.x+=nx*(44-dd)*sh;pr.y+=ny*(44-dd)*sh}}
+ const d=Math.hypot(pr.x,pr.y);if(S.state=='play'){if(d>S.R+11){ws.send(JSON.stringify({r:pr.r,dead:1}));deadR=pr.r;pr=null}}else if(d>S.R-22){pr.x*=(S.R-22)/d;pr.y*=(S.R-22)/d}}
 const petals=Array.from({length:40},()=>({x:Math.random(),y:Math.random(),s:2+Math.random()*4,v:.0005+Math.random()*.001,w:Math.random()*6}));
 function scene(t){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2b1055');g.addColorStop(.6,'#7a2e4a');g.addColorStop(1,'#d9775a');x.fillStyle=g;x.fillRect(0,0,W,H);
  x.fillStyle='#ffe8c2';x.globalAlpha=.85;x.beginPath();x.arc(W*.82,H*.2,Math.min(W,H)*.09,0,7);x.fill();x.globalAlpha=1;
@@ -27,7 +31,7 @@ function ring(R){ x.beginPath();x.arc(0,0,R+10,0,7);x.lineWidth=14;x.strokeStyle
  const g=x.createRadialGradient(0,0,10,0,0,R);g.addColorStop(0,'#f3dfb0');g.addColorStop(1,'#d8b878');x.fillStyle=g;x.beginPath();x.arc(0,0,R,0,7);x.fill();
  x.fillStyle='#fff';x.fillRect(-30,-14,8,28);x.fillRect(22,-14,8,28);
  x.font='bold '+R*.5+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='rgba(120,40,20,.15)';x.fillText('相撲',0,0);x.textBaseline='alphabetic'}
-(function loop(t){t=t||0;scene(t);acc+=Math.min(100,t-lt);lt=t;while(acc>=16.67){acc-=16.67;if(pr){pr.vx=(pr.vx+cur.x*.6)*.92;pr.vy=(pr.vy+cur.y*.6)*.92;pr.x+=pr.vx;pr.y+=pr.vy}}
+(function loop(t){t=t||0;scene(t);acc+=Math.min(100,t-lt);lt=t;while(acc>=16.67){acc-=16.67;step()}
  if(S){const sc=Math.min(W,H)/700;x.save();x.translate(W/2,H/2);x.scale(sc,sc);
   ring(S.R);
   for(const p of S.ps){if(!p.alive)continue;if(p.id==me&&pr){p.rx=pr.x;p.ry=pr.y}else{p.rx=p.rx==null?p.x:p.rx+(p.x-p.rx)*.3;p.ry=p.ry==null?p.y:p.ry+(p.y-p.ry)*.3}const X=p.rx,Y=p.ry;x.beginPath();x.arc(X,Y,22,0,7);x.fillStyle=p.col;x.shadowColor='rgba(0,0,0,.5)';x.shadowBlur=12;x.shadowOffsetY=6;x.fill();x.shadowBlur=0;x.shadowOffsetY=0;x.fillStyle='#fff';x.fillRect(X-22,Y+6,44,7);
