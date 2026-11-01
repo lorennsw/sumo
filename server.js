@@ -15,7 +15,7 @@ wss.on('connection',ws=>{
   if(d.name)p.name=String(d.name).slice(0,12)}catch(e){}});
  ws.on('close',()=>players.delete(ws));
 });
-setInterval(()=>{
+let tick=0;setInterval(()=>{
  const ps=[...players.values()];
  if(state=='play'||state=='over'){
   const play=state=='play';if(play)R=Math.max(70,R-.08);
@@ -30,7 +30,7 @@ setInterval(()=>{
   else if(al.length<=1){if(al[0]){al[0].score++;msg='¡GANÓ '+al[0].name+'! 🏆'}else msg='¡Empate! 😂';state='over';timer=180}
  }
  else if(ps.length>=2){msg='¡Arranca!';state='over';timer=90}
- const out=JSON.stringify({R,state,msg,ps:ps.map(p=>({id:p.id,x:p.x|0,y:p.y|0,col:p.col,name:p.name,score:p.score,alive:p.alive}))});
+ if(++tick%2)return;const out=JSON.stringify({R,state,msg,ps:ps.map(p=>({id:p.id,x:+p.x.toFixed(1),y:+p.y.toFixed(1),vx:+p.vx.toFixed(2),vy:+p.vy.toFixed(2),col:p.col,name:p.name,score:p.score,alive:p.alive}))});
  for(const ws of players.keys())ws.send(out);
 },1000/60);
 srv.listen(process.env.PORT||3000,()=>console.log('listo'));
