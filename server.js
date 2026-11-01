@@ -17,17 +17,18 @@ wss.on('connection',ws=>{
 });
 setInterval(()=>{
  const ps=[...players.values()];
- if(state=='play'){
-  R=Math.max(70,R-.08);
+ if(state=='play'||state=='over'){
+  const play=state=='play';if(play)R=Math.max(70,R-.08);
   for(const p of ps){if(!p.alive)continue;p.vx=(p.vx+p.in.x*.6)*.92;p.vy=(p.vy+p.in.y*.6)*.92;p.x+=p.vx;p.y+=p.vy;
-   if(Math.hypot(p.x,p.y)>R+11)p.alive=false}
+   const d=Math.hypot(p.x,p.y);if(play){if(d>R+11)p.alive=false}else if(d>R-22){p.x*=(R-22)/d;p.y*=(R-22)/d}}
   for(let a=0;a<ps.length;a++)for(let b=a+1;b<ps.length;b++){const p=ps[a],q=ps[b];if(!p.alive||!q.alive)continue;
    const dx=q.x-p.x,dy=q.y-p.y,dd=Math.hypot(dx,dy)||1;if(dd<44){const nx=dx/dd,ny=dy/dd,rv=(p.vx-q.vx)*nx+(p.vy-q.vy)*ny;
     if(rv>0){const j=rv*1.6;p.vx-=j*nx;p.vy-=j*ny;q.vx+=j*nx;q.vy+=j*ny}const o=(44-dd)/2;p.x-=nx*o;p.y-=ny*o;q.x+=nx*o;q.y+=ny*o}}
   const al=ps.filter(p=>p.alive);
-  if(ps.length<2){state='wait';msg='Esperando jugadores...'}
+  if(!play){if(--timer<=0)ps.length>=2?reset():state='wait'}
+  else if(ps.length<2){state='wait';msg='Esperando jugadores...'}
   else if(al.length<=1){if(al[0]){al[0].score++;msg='¡GANÓ '+al[0].name+'! 🏆'}else msg='¡Empate! 😂';state='over';timer=180}
- }else if(state=='over'){if(--timer<=0)ps.length>=2?reset():state='wait'}
+ }
  else if(ps.length>=2){msg='¡Arranca!';state='over';timer=90}
  const out=JSON.stringify({R,state,msg,ps:ps.map(p=>({id:p.id,x:p.x|0,y:p.y|0,col:p.col,name:p.name,score:p.score,alive:p.alive}))});
  for(const ws of players.keys())ws.send(out);
