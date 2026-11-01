@@ -1,17 +1,17 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Sumo de Bolas Online</title>
 <style>body{margin:0;background:#2b1055;color:#fff;font-family:system-ui;overflow:hidden;touch-action:none}canvas{display:block}
-#top{position:fixed;top:8px;width:100%;text-align:center;font-size:14px;pointer-events:none}</style></head><body>
-<div id="top">🥋 <b>SUMO DE BOLAS ONLINE</b> — WASD/flechas o arrastrá el dedo. Pasales el link a tus amigos.</div>
+#top{position:fixed;top:8px;width:100%;text-align:center;font-size:14px;pointer-events:none;padding:0 8px;box-sizing:border-box}.m{display:none}@media (pointer:coarse),(max-width:600px){.d{display:none}.m{display:inline}#top{font-size:12px}}</style></head><body>
+<div id="top">🥋 <b>SUMO DE BOLAS ONLINE</b> <span class="d">— WASD/flechas o arrastrá el dedo. Pasales el link a tus amigos.</span><span class="m"><br>Arrastrá el dedo para moverte</span></div>
 <canvas id="c"></canvas><script>
 const c=document.getElementById('c'),x=c.getContext('2d');let W,H;function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();onresize=rs;
 const name=(prompt('Tu nombre:')||'Jugador').slice(0,12);let S=null,me=0,k={},touch=null;
 const ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
 ws.onopen=()=>ws.send(JSON.stringify({name}));
-ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.you)me=d.you;else if(d.full)alert('Sala llena (máx 6)');else{const old=S;S=d;if(old)for(const p of S.ps){const o=old.ps.find(q=>q.id==p.id);if(o&&o.alive){p.rx=o.rx;p.ry=o.ry}}}};
+ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.you)me=d.you;else if(d.full)alert('Sala llena (máx 6)');else{const old=S;S=d;if(old&&navigator.vibrate){const a=old.ps.find(p=>p.id==me),b=S.ps.find(p=>p.id==me);if(a&&b&&a.alive&&!b.alive)navigator.vibrate(300);if(old.state=='play'&&S.state=='over'&&b&&b.alive)navigator.vibrate([80,60,80,60,200])}if(old)for(const p of S.ps){const o=old.ps.find(q=>q.id==p.id);if(o&&o.alive){p.rx=o.rx;p.ry=o.ry}}}};
 onkeydown=e=>{k[e.key.toLowerCase()]=1;if(e.key.startsWith('Arrow'))e.preventDefault()};onkeyup=e=>k[e.key.toLowerCase()]=0;
-c.onpointerdown=e=>touch={sx:e.clientX,sy:e.clientY,x:0,y:0};
-c.onpointermove=e=>{if(touch){touch.x=(e.clientX-touch.sx)/50;touch.y=(e.clientY-touch.sy)/50}};
+c.onpointerdown=e=>{touch={sx:e.clientX,sy:e.clientY,x:0,y:0,cx:e.clientX,cy:e.clientY};const d=document.documentElement;if(e.pointerType=='touch'&&!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{})};
+c.onpointermove=e=>{if(touch){let dx=e.clientX-touch.sx,dy=e.clientY-touch.sy;const l=Math.hypot(dx,dy);if(l>60){dx*=60/l;dy*=60/l}touch.cx=touch.sx+dx;touch.cy=touch.sy+dy;touch.x=dx/50;touch.y=dy/50}};
 c.onpointerup=c.onpointercancel=()=>touch=null;
 let last='';setInterval(()=>{if(ws.readyState!=1)return;let ix=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0),iy=(k.s||k.arrowdown?1:0)-(k.w||k.arrowup?1:0);
  if(touch){ix=touch.x;iy=touch.y}const m=JSON.stringify({in:{x:ix,y:iy}});if(m!=last){ws.send(m);last=m}},16);
@@ -34,9 +34,10 @@ function ring(R){ x.beginPath();x.arc(0,0,R+10,0,7);x.lineWidth=14;x.strokeStyle
    if(p.id==me){x.lineWidth=4;x.strokeStyle='#fff';x.stroke()}
    x.fillStyle='#000';x.beginPath();x.arc(X-7,Y-5,4,0,7);x.arc(X+7,Y-5,4,0,7);x.fill();
    x.fillStyle='#fff';x.font='bold 14px system-ui';x.textAlign='center';x.fillText(p.name,X,Y-30)}
-  x.restore();x.textAlign='left';x.font='bold 16px system-ui';
-  S.ps.forEach((p,i)=>{x.fillStyle=p.col;x.fillText('● '+p.name+': '+p.score+(p.id==me?' (vos)':''),16,50+i*22)});
-  if(S.state!='play'){x.fillStyle='#fff';x.textAlign='center';x.font='bold 30px system-ui';x.fillText(S.msg,W/2,H/2)}}
+  x.restore();x.textAlign='left';x.font='bold '+(W<600?13:16)+'px system-ui';
+  S.ps.forEach((p,i)=>{x.fillStyle=p.col;x.fillText('● '+p.name+': '+p.score+(p.id==me?' (vos)':''),12,(W<600?62:50)+i*20)});
+  if(S.state!='play'){x.fillStyle='#fff';x.textAlign='center';x.font='bold '+Math.min(30,W/16|0)+'px system-ui';x.shadowColor='#000';x.shadowBlur=8;x.fillText(S.msg,W/2,H/2);x.shadowBlur=0}}
  else{x.fillStyle='#fff';x.textAlign='center';x.font='20px system-ui';x.fillText('Conectando...',W/2,H/2)}
+ if(touch){x.globalAlpha=.35;x.fillStyle='#fff';x.beginPath();x.arc(touch.sx,touch.sy,60,0,7);x.fill();x.globalAlpha=.8;x.beginPath();x.arc(touch.cx,touch.cy,26,0,7);x.fill();x.globalAlpha=1}
  requestAnimationFrame(loop)})();
 </script></body></html>
