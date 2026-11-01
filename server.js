@@ -19,7 +19,7 @@ setInterval(()=>{
  const ps=[...players.values()];
  if(state=='play'){
   R=Math.max(70,R-.08);
-  for(const p of ps){if(!p.alive)continue;p.vx=(p.vx+p.in.x*.85)*.92;p.vy=(p.vy+p.in.y*.85)*.92;p.x+=p.vx;p.y+=p.vy;
+  for(const p of ps){if(!p.alive)continue;p.vx=(p.vx+p.in.x*.6)*.92;p.vy=(p.vy+p.in.y*.6)*.92;p.x+=p.vx;p.y+=p.vy;
    if(Math.hypot(p.x,p.y)>R+11)p.alive=false}
   for(let a=0;a<ps.length;a++)for(let b=a+1;b<ps.length;b++){const p=ps[a],q=ps[b];if(!p.alive||!q.alive)continue;
    const dx=q.x-p.x,dy=q.y-p.y,dd=Math.hypot(dx,dy)||1;if(dd<44){const nx=dx/dd,ny=dy/dd,rv=(p.vx-q.vx)*nx+(p.vy-q.vy)*ny;
