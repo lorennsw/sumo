@@ -1,6 +1,6 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Sumo de Bolas Online</title>
-<style>body{margin:0;background:#1b1430;color:#fff;font-family:system-ui;overflow:hidden;touch-action:none}canvas{display:block}
+<style>body{margin:0;background:#2b1055;color:#fff;font-family:system-ui;overflow:hidden;touch-action:none}canvas{display:block}
 #top{position:fixed;top:8px;width:100%;text-align:center;font-size:14px;pointer-events:none}</style></head><body>
 <div id="top">🥋 <b>SUMO DE BOLAS ONLINE</b> — WASD/flechas o arrastrá el dedo. Pasales el link a tus amigos.</div>
 <canvas id="c"></canvas><script>
@@ -15,10 +15,24 @@ c.onpointermove=e=>{if(touch){touch.x=(e.clientX-touch.sx)/50;touch.y=(e.clientY
 c.onpointerup=c.onpointercancel=()=>touch=null;
 let last='';setInterval(()=>{if(ws.readyState!=1)return;let ix=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0),iy=(k.s||k.arrowdown?1:0)-(k.w||k.arrowup?1:0);
  if(touch){ix=touch.x;iy=touch.y}const m=JSON.stringify({in:{x:ix,y:iy}});if(m!=last){ws.send(m);last=m}},16);
-(function loop(){x.fillStyle='#1b1430';x.fillRect(0,0,W,H);
+const petals=Array.from({length:40},()=>({x:Math.random(),y:Math.random(),s:2+Math.random()*4,v:.0005+Math.random()*.001,w:Math.random()*6}));
+function scene(t){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2b1055');g.addColorStop(.6,'#7a2e4a');g.addColorStop(1,'#d9775a');x.fillStyle=g;x.fillRect(0,0,W,H);
+ x.fillStyle='#ffe8c2';x.globalAlpha=.85;x.beginPath();x.arc(W*.82,H*.2,Math.min(W,H)*.09,0,7);x.fill();x.globalAlpha=1;
+ x.fillStyle='#2a0f1f';x.beginPath();x.moveTo(0,H);x.lineTo(W*.15,H*.62);x.lineTo(W*.3,H*.75);x.lineTo(W*.5,H*.55);x.lineTo(W*.7,H*.72);x.lineTo(W*.88,H*.6);x.lineTo(W,H*.7);x.lineTo(W,H);x.fill();
+ for(let i=0;i<6;i++){const lx=W*(i+.5)/6,ly=40+Math.sin(t/700+i)*4;x.strokeStyle='#000';x.beginPath();x.moveTo(lx,0);x.lineTo(lx,ly-14);x.stroke();
+  x.fillStyle='#ff5a3c';x.shadowColor='#ffb347';x.shadowBlur=25;x.beginPath();x.ellipse(lx,ly,11,15,0,0,7);x.fill();x.shadowBlur=0}
+ x.fillStyle='#ffc0d9';for(const p of petals){p.y+=p.v;p.x+=Math.sin(t/900+p.w)*.0006;if(p.y>1){p.y=-.02;p.x=Math.random()}
+  x.beginPath();x.ellipse(p.x*W,p.y*H,p.s,p.s/2,t/500+p.w,0,7);x.fill()}}
+function ring(R){x.fillStyle='rgba(0,0,0,.35)';x.beginPath();x.ellipse(0,R*.12,R+40,R+30,0,0,7);x.fill();
+ x.fillStyle='#b98b55';x.fillRect(-R-35,-R-35,2*R+70,2*R+70);
+ x.beginPath();x.arc(0,0,R+10,0,7);x.lineWidth=14;x.strokeStyle='#e6d3a3';x.stroke();
+ const g=x.createRadialGradient(0,0,10,0,0,R);g.addColorStop(0,'#f3dfb0');g.addColorStop(1,'#d8b878');x.fillStyle=g;x.beginPath();x.arc(0,0,R,0,7);x.fill();
+ x.fillStyle='#fff';x.fillRect(-30,-14,8,28);x.fillRect(22,-14,8,28);
+ x.font='bold '+R*.5+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='rgba(120,40,20,.15)';x.fillText('相撲',0,0);x.textBaseline='alphabetic'}
+(function loop(t){scene(t||0);
  if(S){const sc=Math.min(W,H)/700;x.save();x.translate(W/2,H/2);x.scale(sc,sc);
-  x.beginPath();x.arc(0,0,S.R,0,7);x.fillStyle='#f6d365';x.fill();x.lineWidth=8;x.strokeStyle='#ff6b6b';x.stroke();
-  for(const p of S.ps){if(!p.alive)continue;p.rx=p.rx==null?p.x:p.rx+(p.x-p.rx)*.5;p.ry=p.ry==null?p.y:p.ry+(p.y-p.ry)*.5;const X=p.rx,Y=p.ry;x.beginPath();x.arc(X,Y,22,0,7);x.fillStyle=p.col;x.fill();
+  ring(S.R);
+  for(const p of S.ps){if(!p.alive)continue;p.rx=p.rx==null?p.x:p.rx+(p.x-p.rx)*.5;p.ry=p.ry==null?p.y:p.ry+(p.y-p.ry)*.5;const X=p.rx,Y=p.ry;x.beginPath();x.arc(X,Y,22,0,7);x.fillStyle=p.col;x.shadowColor='rgba(0,0,0,.5)';x.shadowBlur=12;x.shadowOffsetY=6;x.fill();x.shadowBlur=0;x.shadowOffsetY=0;x.fillStyle='#fff';x.fillRect(X-22,Y+6,44,7);
    if(p.id==me){x.lineWidth=4;x.strokeStyle='#fff';x.stroke()}
    x.fillStyle='#000';x.beginPath();x.arc(X-7,Y-5,4,0,7);x.arc(X+7,Y-5,4,0,7);x.fill();
    x.fillStyle='#fff';x.font='bold 14px system-ui';x.textAlign='center';x.fillText(p.name,X,Y-30)}
